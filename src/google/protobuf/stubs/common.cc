@@ -127,9 +127,6 @@ namespace internal {
 #if defined(__ANDROID__)
 inline void DefaultLogHandler(LogLevel level, const char* filename, int line,
                               const string& message) {
-  if (level < GOOGLE_PROTOBUF_MIN_LOG_LEVEL) {
-    return;
-  }
   static const char* level_names[] = {"INFO", "WARNING", "ERROR", "FATAL"};
 
   static const int android_log_levels[] = {
@@ -165,11 +162,11 @@ void DefaultLogHandler(LogLevel level, const char* filename, int line,
   if (level < GOOGLE_PROTOBUF_MIN_LOG_LEVEL) {
     return;
   }
-  static const char* level_names[] = { "INFO", "WARNING", "ERROR", "FATAL" };
+  static const char* level_names[] = { "INFO", "STATUS", "WARNING", "ERROR", "FATAL" };
 
   // We use fprintf() instead of cerr because we want this to work at static
   // initialization time.
-  fprintf(stderr, "[libprotobuf %s %s:%d] %s\n",
+  fprintf(stderr, "[%s %s:%d] %s\n",
           level_names[level], filename, line, message.c_str());
   fflush(stderr);  // Needed on MSVC.
 }
@@ -182,6 +179,17 @@ void NullLogHandler(LogLevel /* level */, const char* /* filename */,
 
 static LogHandler* log_handler_ = &DefaultLogHandler;
 static std::atomic<int> log_silencer_count_ = ATOMIC_VAR_INIT(0);
+
+static LogLevel min_log_level_ = LOGLEVEL_INFO;
+
+LogLevel SetLogLevel(LogLevel new_level) {
+  // Overload the log_silencer_count_mutex.
+  MutexLock lock(log_silencer_count_mutex_);
+  LogLevel prev = min_log_level_;
+  min_log_level_ = new_level;
+  return prev;
+}
+
 
 LogMessage& LogMessage::operator<<(const string& value) {
   message_ += value;
@@ -247,7 +255,9 @@ void LogMessage::Finish() {
   bool suppress = false;
 
   if (level_ != LOGLEVEL_FATAL) {
-    suppress = log_silencer_count_ > 0;
+    InitLogSilencerCountOnce();
+    MutexLock lock(log_silencer_count_mutex_);
+    suppress = log_silencer_count_ > 0 || level_ < min_log_level_;
   }
 
   if (!suppress) {

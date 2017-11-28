@@ -45,6 +45,7 @@ namespace protobuf {
 enum LogLevel {
   LOGLEVEL_INFO,     // Informational.  This is never actually used by
                      // libprotobuf.
+  LOGLEVEL_STATUS,   // Status messages.
   LOGLEVEL_WARNING,  // Warns about issues that, although not technically a
                      // problem now, could cause problems in the future.  For
                      // example, a // warning will be printed when parsing a
@@ -62,6 +63,9 @@ enum LogLevel {
   LOGLEVEL_DFATAL = LOGLEVEL_FATAL
 #endif
 };
+
+// Returns the previous log level.
+LogLevel SetLogLevel(LogLevel new_level);
 
 class StringPiece;
 namespace util {
