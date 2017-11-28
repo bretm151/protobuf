@@ -30,6 +30,8 @@
 
 // Author: kenton@google.com (Kenton Varda)
 
+#include "sys/time.h"
+
 #include <google/protobuf/stubs/common.h>
 
 #include <atomic>
@@ -164,9 +166,15 @@ void DefaultLogHandler(LogLevel level, const char* filename, int line,
   }
   static const char* level_names[] = { "INFO", "STATUS", "WARNING", "ERROR", "FATAL" };
 
+  struct timeval tm_now;
+  gettimeofday(&tm_now, nullptr);
+  struct tm* tm = gmtime(&tm_now.tv_sec);
+  char time_buf[30];
+  strftime(time_buf, sizeof(time_buf), "%F %T", tm);
+
   // We use fprintf() instead of cerr because we want this to work at static
   // initialization time.
-  fprintf(stderr, "[%s %s:%d] %s\n",
+  fprintf(stderr, "%s.%03zd %s %s:%d %s\n", time_buf, tm_now.tv_usec/1000,
           level_names[level], filename, line, message.c_str());
   fflush(stderr);  // Needed on MSVC.
 }
