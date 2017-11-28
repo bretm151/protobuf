@@ -182,14 +182,6 @@ static std::atomic<int> log_silencer_count_ = ATOMIC_VAR_INIT(0);
 
 static LogLevel min_log_level_ = LOGLEVEL_INFO;
 
-LogLevel SetLogLevel(LogLevel new_level) {
-  // Overload the log_silencer_count_mutex.
-  MutexLock lock(log_silencer_count_mutex_);
-  LogLevel prev = min_log_level_;
-  min_log_level_ = new_level;
-  return prev;
-}
-
 
 LogMessage& LogMessage::operator<<(const string& value) {
   message_ += value;
@@ -278,6 +270,28 @@ void LogFinisher::operator=(LogMessage& other) {
 }
 
 }  // namespace internal
+
+LogLeveler::LogLeveler(LogLevel new_level) {
+  internal::InitLogSilencerCountOnce();
+  MutexLock lock(internal::log_silencer_count_mutex_);
+  prev_ = internal::min_log_level_;
+  internal::min_log_level_ = new_level;
+}
+
+LogLeveler::~LogLeveler() {
+  internal::InitLogSilencerCountOnce();
+  MutexLock lock(internal::log_silencer_count_mutex_);
+  internal::min_log_level_ = prev_;
+}
+
+LogLevel SetLogLevel(LogLevel new_level) {
+  internal::InitLogSilencerCountOnce();
+  // Overload the log_silencer_count_mutex.
+  MutexLock lock(internal::log_silencer_count_mutex_);
+  LogLevel prev = internal::min_log_level_;
+  internal::min_log_level_ = new_level;
+  return prev;
+}
 
 LogHandler* SetLogHandler(LogHandler* new_func) {
   LogHandler* old = internal::log_handler_;

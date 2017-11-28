@@ -67,6 +67,14 @@ enum LogLevel {
 // Returns the previous log level.
 LogLevel SetLogLevel(LogLevel new_level);
 
+class LogLeveler {
+ public:
+  LogLeveler(LogLevel new_level);
+  ~LogLeveler();
+ private:
+    LogLevel prev_;
+};
+
 class StringPiece;
 namespace util {
 class Status;
