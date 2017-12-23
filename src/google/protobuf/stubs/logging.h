@@ -66,6 +66,7 @@ enum LogLevel {
 
 // Returns the previous log level.
 LogLevel SetLogLevel(LogLevel new_level);
+LogLevel GetLogLevel();
 
 class LogLeveler {
  public:

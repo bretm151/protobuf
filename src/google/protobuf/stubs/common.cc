@@ -292,6 +292,12 @@ LogLeveler::~LogLeveler() {
   internal::min_log_level_ = prev_;
 }
 
+LogLevel GetLogLevel() {
+  MutexLock lock(internal::log_silencer_count_mutex_);
+  LogLevel prev = internal::min_log_level_;
+  return prev;
+}
+
 LogLevel SetLogLevel(LogLevel new_level) {
   internal::InitLogSilencerCountOnce();
   // Overload the log_silencer_count_mutex.
