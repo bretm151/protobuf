@@ -153,6 +153,7 @@ class StatusOr {
   // If you need to initialize a T object from the stored value,
   // ConsumeValueOrDie() may be more efficient.
   const T& ValueOrDie() const;
+  T MoveValueOrDie();
 
  private:
   Status status_;
@@ -253,6 +254,14 @@ inline const T& StatusOr<T>::ValueOrDie() const {
     internal::StatusOrHelper::Crash(status_);
   }
   return value_;
+}
+
+template<typename T>
+inline T StatusOr<T>::MoveValueOrDie() {
+  if (!status_.ok()) {
+    internal::StatusOrHelper::Crash(status_);
+  }
+  return std::move(value_);
 }
 }  // namespace util
 }  // namespace protobuf
